@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "qwerty12345" ;
+const JWT_SECRET = process.env.JWT_SECRET || "qwerty4321" ;
 
 export const registerUser = async (req, res) => {
   try {
@@ -45,13 +45,11 @@ export const loginUser = async (req, res) => {
       res.status(400).json({ message: "Invalid credentails password" });
     }
 
-    const token = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-      },
-      JWT_SECRET
-    );
+   const token = jwt.sign(
+  { id: user._id, email: user.email },
+ JWT_SECRET || "qwerty4321", 
+  { expiresIn: "1d" }
+);
 
     res.json({
       token,
