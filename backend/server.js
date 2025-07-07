@@ -4,6 +4,7 @@ import { connectDB } from "./config/db.js";
 import cors from "cors"
 import authRoutes from "./routes/auth.js"
 import taskRoutes from "./routes/task.js"
+import ActionLog from "./models/ActionLogs.js";
 dotenv.config();
 
 const app = express();
@@ -14,6 +15,7 @@ app.use(express.json());
 
 app.use("/api/auth" , authRoutes)
 app.use("/api/task" , taskRoutes)
+app.use("/api/action-logs" , ActionLog)
 
 connectDB().then(() => {
   app.listen(port, () => {
