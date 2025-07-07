@@ -37,21 +37,21 @@ export const loginUser = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      res.status(400).json({ message: "Invalid credentials email" });
+      return res.status(400).json({ message: "Invalid credentials email" }); // ✅ return
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      res.status(400).json({ message: "Invalid credentails password" });
+      return res.status(400).json({ message: "Invalid credentials password" }); // ✅ return
     }
 
-   const token = jwt.sign(
-  { id: user._id, email: user.email },
- JWT_SECRET || "qwerty4321", 
-  { expiresIn: "1d" }
-);
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      JWT_SECRET || "qwerty4321", 
+      { expiresIn: "1d" }
+    );
 
-    res.json({
+    return res.json({
       token,
       user: {
         id: user._id,
@@ -59,8 +59,10 @@ export const loginUser = async (req, res) => {
         email: user.email,
       },
     });
+    
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 };
+

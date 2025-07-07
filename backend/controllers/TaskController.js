@@ -3,8 +3,11 @@ import Task from "../models/Task.js";
 
 export const createTask = async (req, res) => {
   try {
+    console.log("🟢 Incoming Task Data:", req.body);
+
     const { title, description, priority, assignedTo } = req.body;
 
+    // Create the task
     const task = await Task.create({
       title,
       description,
@@ -12,22 +15,26 @@ export const createTask = async (req, res) => {
       assignedTo,
     });
 
+    // Log the creation action
     await ActionLog.create({
       user: req.user.id,
       task: task._id,
       action: "Created",
     });
 
+    // Populate the task with user data
     const populatedTask = await Task.findById(task._id).populate(
       "assignedTo",
       "username email"
     );
 
-    res
-      .status(201)
-      .json({ message: "Task created successfully", task: populatedTask });
+    res.status(201).json({
+      message: "Task created successfully",
+      task: populatedTask,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Failed to create new task" });
+    console.error("❌ Task creation failed:", error.message);
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -49,7 +56,7 @@ export const updateTask = async (req, res) => {
       priority,
       assignedTo,
       status,
-      clientUpdatedAt 
+      clientUpdatedAt,
     } = req.body;
 
     const task = await Task.findById(id);
@@ -57,30 +64,33 @@ export const updateTask = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-  
-    const serverTime = new Date(task.updatedAt).getTime();
-    const clientTime = new Date(clientUpdatedAt).getTime();
+    // 🟨 Conflict check only if it's a full edit
+    if (clientUpdatedAt) {
+      const serverTime = new Date(task.updatedAt).getTime();
+      const clientTime = new Date(clientUpdatedAt).getTime();
 
-    if (serverTime !== clientTime) {
-      return res.status(409).json({
-        message: "Conflict detected. Task has already been updated by another user.",
-        serverTask: task
-      });
+      if (serverTime !== clientTime) {
+        return res.status(409).json({
+          message:
+            "Conflict detected. Task has already been updated by another user.",
+          serverTask: task,
+        });
+      }
     }
 
-
-    task.title = title;
-    task.description = description;
-    task.priority = priority;
-    task.assignedTo = assignedTo;
-    task.status = status;
+    // ✅ Apply updates
+    if (title !== undefined) task.title = title;
+    if (description !== undefined) task.description = description;
+    if (priority !== undefined) task.priority = priority;
+    if (assignedTo !== undefined) task.assignedTo = assignedTo;
+    if (status !== undefined) task.status = status;
 
     await task.save();
 
     await ActionLog.create({
       user: req.user.id,
       task: id,
-      action: "Edited"
+      action: clientUpdatedAt ? "Edited" : `Moved to ${status}`,
     });
 
     res.status(200).json({ message: "Task updated successfully", task });
@@ -89,6 +99,7 @@ export const updateTask = async (req, res) => {
     res.status(500).json({ message: "Failed to update task" });
   }
 };
+
 
 export const deleteTask = async (req, res) => {
   try {
@@ -136,4 +147,15 @@ export const dragDropTask = async (req, res) => {
     res.status(500).json({ message: "Failed to update task status" });
   }
 };
+
+export const getAllTasks = async (req, res) => {
+  try {
+    const tasks = await Task.find().populate("assignedTo", "username email");
+    res.json(tasks);
+  } catch (error) {
+    console.error("❌ Failed to fetch tasks:", error.message);
+    res.status(500).json({ message: "Failed to fetch tasks" });
+  }
+};
+
 
